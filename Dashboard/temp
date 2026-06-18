@@ -1,1 +1,437 @@
 
+import streamlit as st
+import pandas as pd
+import json
+
+# Set broad professional layout configuration
+st.set_page_config(page_title="Trust & Safety: Platform Protection Terminal", layout="wide")
+
+# Custom CSS injection for stylized dashboard aesthetics
+st.markdown("""
+<style>
+    .metric-card { background-color: #1e293b; padding: 20px; border-radius: 10px; border-left: 5px solid #ef4444; margin-bottom: 15px; }
+    .report-box { background-color: #7f1d1d; border: 1px solid #f87171; padding: 15px; border-radius: 8px; color: #fef2f2; margin-bottom: 20px; }
+    .timeline-msg { background-color: #0f172a; padding: 12px; border-radius: 6px; margin-bottom: 8px; border: 1px solid #334155; }
+    .badge-high { background-color: #dc2626; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+    .badge-low { background-color: #059669; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+</style>
+""", unsafe_allow_html=True)
+
+# -----------------------------------------------------------------------------
+# DATA PIPELINE PARSERS
+# -----------------------------------------------------------------------------
+@st.cache_data
+def load_global_profiles():
+    data = []
+    with open("global_sender_profiles.jsonl", "r", encoding="utf-8") as f:
+        for line in f:
+            if line.strip():
+                obj = json.loads(line)
+                # Flatten variables for cleaner analysis operations
+                flat = {
+                    "sender_id": obj["sender_id"],
+                    "risk_score": obj["overall_bert_profile"]["risk-score"],
+                    "grooming": obj["overall_bert_profile"]["grooming"],
+                    "bullying": obj["overall_bert_profile"]["bullying"],
+                    "toxicity": obj["overall_bert_profile"]["toxicity"],
+                    "sextortion": obj["overall_bert_profile"]["sextortion"],
+                    "behavioral_summary": obj["global_llm_supervisor_analysis"]["global_behavioral_summary"]
+                }
+                data.append(flat)
+    return pd.DataFrame(data)
+
+@st.cache_data
+def load_one_to_one_feed():
+    data = []
+    with open("oneToOne_conversations_dashboard_feed.jsonl", "r", encoding="utf-8") as f:
+        for line in f:
+            if line.strip():
+                data.append(json.loads(line))
+    return data
+
+@st.cache_data
+def load_raw_comments():
+    data = []
+    with open("comments_raw.jsonl", "r", encoding="utf-8") as f:
+        for line in f:
+            if line.strip():
+                obj = json.loads(line)
+                flat = {
+                    "comment_id": obj["comment_id"],
+                    "text": obj["text"],
+                    "timestamp": obj["timestamp"],
+                    "sender_id": obj["sender"]["user_id"],
+                    "username": obj["sender"]["username"],
+                    "receiver_id": obj["receiver"]["user_id"],
+                    "is_parent_managed": obj["receiver"]["is_parent_managed"],
+                    "report_count": obj["report_count"]
+                }
+                data.append(flat)
+    return pd.DataFrame(data)
+
+# Load data models into cache state
+try:
+    df_global = load_global_profiles()
+    conversations_list = load_one_to_one_feed()
+    df_comments = load_raw_comments()
+except Exception as e:
+    st.error(f"Pipeline Connectivity Error: Ensure data streams are active. Details: {e}")
+    st.stop()
+
+# Initialize reactive routing session components
+if "current_page" not in st.session_state:
+    st.session_state.current_page = "main"
+if "selected_abuser" not in st.session_state:
+    st.session_state.selected_abuser = None
+if "selected_victim" not in st.session_state:
+    st.session_state.selected_victim = None
+
+# Navigation Helper Utilities
+def navigate_to(page, abuser=None, victim=None):
+    st.session_state.current_page = page
+    if abuser: st.session_state.selected_abuser = abuser
+    if victim: st.session_state.selected_victim = victim
+    st.rerun()
+
+# -----------------------------------------------------------------------------
+# LEVEL 1: MAIN PLATFORM INSIGHTS OVERVIEW
+# -----------------------------------------------------------------------------
+if st.session_state.current_page == "main":
+    st.title("🛡️ Trust & Safety Platform Analytics")
+    st.subheader("Parental-Controlled Account Enforcement Portal")
+    
+    # Platform KPI Rows
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.markdown(f'<div class="metric-card"><h3>{len(df_global)}</h3><p>Monitored High-Risk Senders</p></div>', unsafe_allow_html=True)
+    with col2:
+        high_pri_count = len(df_global[df_global["risk_score"] >= 0.85])
+        st.markdown(f'<div class="metric-card"><h3>{high_pri_count}</h3><p>Critical Urgent Priorities</p></div>', unsafe_allow_html=True)
+    with col3:
+        total_reports = df_comments["report_count"].sum()
+        st.markdown(f'<div class="metric-card"><h3>{total_reports}</h3><p>Total User Flagged Submissions</p></div>', unsafe_allow_html=True)
+    with col4:
+        st.markdown('<div class="metric-card" style="border-left-color: #10b981;"><h3>Active</h3><p>Real-Time AI Stream Monitor</p></div>', unsafe_allow_html=True)
+
+    st.markdown("---")
+    
+    # Priority Filters
+    st.markdown("#### Filter Flagged Violations")
+    priority_filter = st.radio("Select Alert Class Level", ["All Classifications", "High Priority (Risk ≥ 0.85)", "Low Priority (Risk < 0.85)"], horizontal=True)
+    
+    filtered_global = df_global.copy()
+    if priority_filter == "High Priority (Risk ≥ 0.85)":
+        filtered_global = filtered_global[filtered_global["risk_score"] >= 0.85]
+    elif priority_filter == "Low Priority (Risk < 0.85)":
+        filtered_global = filtered_global[filtered_global["risk_score"] < 0.85]
+
+    # Render Primary Data List
+    st.markdown("### Flags Awaiting Review")
+    
+    for _, row in filtered_global.iterrows():
+        abuser_id = row["sender_id"]
+        # Extract metadata metrics
+        abuser_comments = df_comments[df_comments["sender_id"] == abuser_id]
+        total_comments_count = len(abuser_comments)
+        total_flagged_reports = abuser_comments["report_count"].sum()
+        
+        badge = '<span class="badge-high">HIGH PRIORITY</span>' if row["risk_score"] >= 0.85 else '<span class="badge-low">LOW PRIORITY</span>'
+        
+        with st.container():
+            c1, c2, c3, c4, c5 = st.columns([1.5, 1, 1, 1, 1])
+            c1.markdown(f"**Abuser Profile:** `{abuser_id}` {badge}", unsafe_allow_html=True)
+            c2.markdown(f"📈 **Risk Score:** `{row['risk_score']:.2f}`")
+            c3.markdown(f"💬 **Total Comments:** `{total_comments_count}`")
+            c4.markdown(f"🚨 **Total Reports:** `{total_flagged_reports}`")
+            if c5.button("Investigate Vector Profile", key=f"btn_{abuser_id}"):
+                navigate_to("abuser_profile", abuser=abuser_id)
+            st.markdown("<hr style='margin: 10px 0; border-color: #334155;' />", unsafe_allow_html=True)
+
+# -----------------------------------------------------------------------------
+# LEVEL 2: GLOBAL OFFENDER INVESTIGATION VIEW
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# LEVEL 2: GLOBAL OFFENDER INVESTIGATION VIEW (UPDATED WITH TOP-RIGHT FLAG)
+# -----------------------------------------------------------------------------
+elif st.session_state.current_page == "abuser_profile":
+    abuser_id = st.session_state.selected_abuser
+    
+    # Create top header alignment row for navigation and strategic profile flagging
+    header_col, flag_col = st.columns([4, 1])
+    
+    with header_col:
+        st.button("⬅️ Return to Main Terminal Overview", on_click=navigate_to, args=("main",))
+    
+    with flag_col:
+        # Check if this target is already globally flagged
+        is_currently_flagged = st.session_state.get(f"flagged_handle_{abuser_id}", False)
+        
+        # Calculate total aggregate reports to attach to the flag
+        abuser_comments = df_comments[df_comments["sender_id"] == abuser_id]
+        total_flagged_reports = abuser_comments["report_count"].sum()
+        
+        if is_currently_flagged:
+            if st.button("🚩 Profile Flagged Active", key="flag_profile_btn", type="primary", use_container_width=True):
+                st.session_state[f"flagged_handle_{abuser_id}"] = False
+                st.rerun()
+        else:
+            if st.button("🏳️ Flag User Profile", key="flag_profile_btn", use_container_width=True):
+                st.session_state[f"flagged_handle_{abuser_id}"] = True
+                st.rerun()
+                
+    st.title(f"🔍 Deep Investigation: Profile `{abuser_id}`")
+    
+    
+    # Load specific row elements from global cache
+    meta = df_global[df_global["sender_id"] == abuser_id].iloc[0]
+    
+    col1, col2 = st.columns([1, 2])
+    with col1:
+        st.markdown("### AI Model Structural Classification Analytics")
+        st.progress(float(meta["risk_score"]), text=f"Overall Global Risk Score: {meta['risk_score']:.2f}")
+        st.write(f"▪️ **Grooming Probability Indicator:** `{meta['grooming']:.2f}`")
+        st.write(f"▪️ **Cyberbullying Vector Index:** `{meta['bullying']:.2f}`")
+        st.write(f"▪️ **Sexual Toxicity Rating:** `{meta['sextortion']:.2f}`")
+    
+    with col2:
+        st.markdown("### Core Behavioral AI Synopsis Summary")
+        st.info(meta["behavioral_summary"])
+
+    # -----------------------------------------------------------------------------
+    # NEW FEATURE: LIVE VERDICT METRIC VISUALIZATION (FALSE POSITIVES VS TRUE VALUES)
+    # -----------------------------------------------------------------------------
+    st.markdown("---")
+    st.markdown("### 📊 Analyst Verification Audit Metrics")
+    st.markdown("*This section displays the aggregate verification breakdown from your evaluations inside individual target profiles.*")
+    
+    # Scan session state to count judgements assigned to this specific abuser
+    true_positive_count = 0
+    false_positive_count = 0
+    
+    for key, val in st.session_state.items():
+        if key.startswith(f"status_{abuser_id}_"):
+            if "True Value" in str(val):
+                true_positive_count += 1
+            elif "False Positive" in str(val):
+                false_positive_count += 1
+                
+    total_reviewed = true_positive_count + false_positive_count
+
+    # Display clean visual summary rows
+    v_col1, v_col2, v_col3 = st.columns(3)
+    with v_col1:
+        st.markdown(f"""
+        <div style="background-color: #1e293b; padding: 15px; border-radius: 8px; border-left: 5px solid #22c55e; text-align: center;">
+            <h2 style="margin:0; color:#22c55e;">{true_positive_count}</h2>
+            <p style="margin:0; color:#94a3b8; font-size:14px;">Confirmed True Violations</p>
+        </div>
+        """, unsafe_allow_html=True)
+    with v_col2:
+        st.markdown(f"""
+        <div style="background-color: #1e293b; padding: 15px; border-radius: 8px; border-left: 5px solid #64748b; text-align: center;">
+            <h2 style="margin:0; color:#f43f5e;">{false_positive_count}</h2>
+            <p style="margin:0; color:#94a3b8; font-size:14px;">Identified False Positives</p>
+        </div>
+        """, unsafe_allow_html=True)
+    with v_col3:
+        st.markdown(f"""
+        <div style="background-color: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid #334155; text-align: center;">
+            <h2 style="margin:0; color:#e2e8f0;">{total_reviewed}</h2>
+            <p style="margin:0; color:#94a3b8; font-size:14px;">Total Comments Audited</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # -----------------------------------------------------------------------------
+    # NEW FEATURE: GLOBAL ENFORCEMENT CONTROL PANEL
+    # -----------------------------------------------------------------------------
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown(f"### ⚡ Global Account Enforcement Controls")
+    
+    act_col1, act_col2, act_col3 = st.columns(3)
+    
+    with act_col1:
+        if st.button("⚠️ Issue Official Warning", key="action_warn", use_container_width=True):
+            st.warning(f"System Action Logged: Formal warning citation transmitted to profile `{abuser_id}`.")
+            st.session_state[f"global_action_{abuser_id}"] = "Warned"
+            
+    with act_col2:
+        if st.button("⏳ Restrict Profile for 24 Hours", key="action_restrict", use_container_width=True):
+            st.error(f"System Action Logged: Profile `{abuser_id}` messaging capabilities suspended for 24 hours.")
+            st.session_state[f"global_action_{abuser_id}"] = "Restricted (24h)"
+            
+    with act_col3:
+        if st.button("🚫 Permanently Block Profile", key="action_block", type="primary", use_container_width=True):
+            st.error(f"CRITICAL ACTION EXECUTED: Profile `{abuser_id}` has been permanently banned from the platform.")
+            st.session_state[f"global_action_{abuser_id}"] = "Permanently Banned"
+
+    # Display active enforcement status badge if one has been deployed
+    active_action = st.session_state.get(f"global_action_{abuser_id}", None)
+    if active_action:
+        st.info(f"**Current Profile Status Enforcement Status:** `{active_action}`")
+
+    # -----------------------------------------------------------------------------
+    # INTERACTION MATRIX ACROSS TARGET MINOR ACCOUNTS
+    # -----------------------------------------------------------------------------
+    st.markdown("---")
+    st.markdown("### Interaction Matrix Across Target Minor Accounts")
+    
+    # Filter multi-victim lists from one-to-one files
+    sub_conversations = [c for c in conversations_list if c["sender_id"] == abuser_id]
+    
+    # Priority Level Filter Layer
+    sub_filter = st.radio("Filter Interaction Sub-Nodes", ["All Targets", "High Priority Targets", "Low Priority Targets"], horizontal=True, key="sub_filter_set")
+    
+    for node in sub_conversations:
+        victim_id = node["receiver_id"]
+        node_score = node["bert_analysis"]["risk-score"]
+        msg_count = len(node["conversation"])
+        
+        # Priority parsing definitions
+        is_node_high = node_score >= 0.85
+        if sub_filter == "High Priority Targets" and not is_node_high: continue
+        if sub_filter == "Low Priority Targets" and is_node_high: continue
+        
+        node_badge = '<span class="badge-high">CRITICAL AXIS</span>' if is_node_high else '<span class="badge-low">STABLE VARIANT</span>'
+        
+        with st.container():
+            cx, cy, cz, cw = st.columns([2, 1, 1, 1])
+            cx.markdown(f"🎯 **Target Account:** `{victim_id}` {node_badge}", unsafe_allow_html=True)
+            cy.markdown(f"📊 **Node Risk Score:** `{node_score:.2f}`")
+            cz.markdown(f"✉️ **Interaction Density:** `{msg_count} comments`")
+            if cw.button("Review Conversation Stream", key=f"target_{victim_id}"):
+                navigate_to("conversation_view", abuser=abuser_id, victim=victim_id)
+            st.markdown("<hr style='margin: 8px 0; border-color: #1e293b;' />", unsafe_allow_html=True)
+
+# -----------------------------------------------------------------------------
+# LEVEL 3: GRANULAR CONVERSATION MATRIX & DECISION TERMINAL
+# -----------------------------------------------------------------------------
+elif st.session_state.current_page == "conversation_view":
+    import smtplib
+    import os
+    from dotenv import load_dotenv
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+
+    # Load system environment parameters silently from the local secret file
+    load_dotenv()
+    SMTP_SENDER = os.getenv("SMTP_SENDER_EMAIL")
+    SMTP_PASSWORD = os.getenv("SMTP_APP_PASSWORD")
+    PARENT_EMAIL = os.getenv("PARENT_TARGET_EMAIL", "tusharpokhriyal69@gmail.com")
+
+    abuser_id = st.session_state.selected_abuser
+    victim_id = st.session_state.selected_victim
+    
+    st.button(f"⬅️ Back to Profile {abuser_id} Investigation Hub", on_click=navigate_to, args=("abuser_profile", abuser_id))
+    
+    st.title("🧵 Complete Granular Interaction History")
+    st.subheader(f"Perpetrator: `{abuser_id}` ➡️ Target Victim: `{victim_id}`")
+    
+    # Filter the exact top reported comment to highlight
+    incident_comments = df_comments[(df_comments["sender_id"] == abuser_id) & (df_comments["receiver_id"] == victim_id)]
+    
+    if not incident_comments.empty:
+        top_reported = incident_comments.sort_values(by="report_count", ascending=False).iloc[0]
+        st.markdown(f"""
+        <div class="report-box">
+            <h4>🚨 CRITICAL OUTLIER: HIGH-COUNT REPORTED COMMENT ON TOP</h4>
+            <p style="font-size: 18px; font-weight: 500;">"{top_reported['text']}"</p>
+            <p style="font-size: 13px; margin-bottom: 0;">Report Multiplier Count: <strong>{top_reported['report_count']} flags</strong> | Registered Timestamp: {top_reported['timestamp']}</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Locate full underlying conversational array stream
+    convo_node = next((c for c in conversations_list if c["sender_id"] == abuser_id and c["receiver_id"] == victim_id), None)
+    
+    # FIX: Cleaned up dialog handling by letting it close without throwing RerunException
+    @st.dialog("Review Comment Validity")
+    def review_comment_modal(comment_idx, text):
+        st.markdown(f"**Selected Text Context:**")
+        st.info(f'"{text}"')
+        st.markdown("Assign a system validity judgment to this node:")
+        
+        status = st.radio("Resolution Matrix", ["True Value (Confirmed Violation)", "False Positive (Erroneous Flag)"])
+        notes = st.text_area("Optional Investigation Notes")
+        
+        if st.button("Commit Enforcement Entry", use_container_width=True):
+            st.session_state[f"status_{abuser_id}_{comment_idx}"] = status
+            # Inform the user and guide them to close the modal or let it click away
+            st.success(f"Saved as {status}! Click anywhere outside this box to view changes.")
+
+    st.markdown("### Contextual Dialogue Analysis Stream")
+    if convo_node:
+        for idx, msg in enumerate(convo_node["conversation"]):
+            is_reported_match = not incident_comments.empty and msg["text"] == top_reported["text"]
+            border_style = "border: 2px solid #ef4444; background-color: #451a03;" if is_reported_match else ""
+            
+            # Actionable layout splitting
+            col_msg, col_btn = st.columns([5, 1])
+            
+            with col_msg:
+                current_status = st.session_state.get(f"status_{abuser_id}_{idx}", None)
+                status_html = ""
+                if current_status:
+                    color = "#22c55e" if "True" in current_status else "#64748b"
+                    status_html = f' <span style="background-color: {color}; color: white; padding: 2px 6px; border-radius:3px; font-size:10px;">{current_status.upper()}</span>'
+                
+                st.markdown(f"""
+                <div class="timeline-msg" style="{border_style}">
+                    <span style="color: #94a3b8; font-size: 11px;">[{msg['timestamp']}]</span>{status_html}<br>
+                    <strong style="color: #f43f5e;">{abuser_id}:</strong> <span style="color: #e2e8f0;">{msg['text']}</span>
+                    {' <span class="badge-high" style="font-size:10px;">TRIGGER INCIDENT</span>' if is_reported_match else ''}
+                </div>
+                """, unsafe_allow_html=True)
+                
+            with col_btn:
+                st.markdown("<div style='padding-top: 10px;'></div>", unsafe_allow_html=True)
+                if st.button("⚖️ Decide", key=f"eval_{idx}", use_container_width=True):
+                    review_comment_modal(idx, msg['text'])
+
+    # -----------------------------------------------------------------------------
+    # SECURED OUTBOUND PARENTAL ESCALATION PANEL
+    # -----------------------------------------------------------------------------
+    st.markdown("---")
+    st.markdown("### 📧 Outbound Parental Escalation Module")
+    
+    # Construct a dynamic text template using real file artifacts
+    flagged_snippet = top_reported['text'] if not incident_comments.empty else "Multiple malicious behavior patterns logged."
+    
+    default_subject = f"[URGENT] Trust & Safety Alert: Guardian Notice Regarding Account {victim_id}"
+    default_body = f"""Dear Guardian,
+
+This is an automated safety notification from our Trust & Safety Portal. Our moderation intelligence model has flagged suspicious interaction targeting your child's profile ({victim_id}).
+
+Perpetrator Account: {abuser_id}
+Flagged Interaction Snippet: "{flagged_snippet}"
+
+We have quarantined the malicious user pending a comprehensive platform review. Please log in to your Parental Console to review settings or restrict messaging parameters.
+
+Yours securely,
+Platform Trust & Safety Operations Core"""
+
+    subject_field = st.text_input("Email Header Subject Line", value=default_subject)
+    body_field = st.text_area("Body Message Content (Editable)", value=default_body, height=200)
+    
+    if st.button("🚀 Dispatch Live Email to Parent", type="primary", use_container_width=True):
+        if not SMTP_SENDER or not SMTP_PASSWORD:
+            st.error("Security System Error: Server credentials are missing from the background execution system environment.")
+        else:
+            with st.spinner("Processing server-side secure email handshake..."):
+                try:
+                    # Setup the MIME message system
+                    msg_root = MIMEMultipart()
+                    msg_root['From'] = SMTP_SENDER
+                    msg_root['To'] = PARENT_EMAIL
+                    msg_root['Subject'] = subject_field
+                    msg_root.attach(MIMEText(body_field, 'plain'))
+                    
+                    # Initialize secure backend transaction
+                    server = smtplib.SMTP("smtp.gmail.com", 587)
+                    server.starttls()
+                    server.login(SMTP_SENDER, SMTP_PASSWORD)
+                    server.sendmail(SMTP_SENDER, PARENT_EMAIL, msg_root.as_string())
+                    server.quit()
+                    
+                    # Explicit success feedback without disclosing the targeted address string
+                    st.success("Transmission Successful! Alert notification transmitted securely to the verified parental account.")
+                except Exception as mail_err:
+                    st.error(f"Failed to transmit email package via backend: {mail_err}")

@@ -34,7 +34,7 @@ st.markdown("""
         padding: 14px 20px; 
         border-radius: 8px; 
         margin-bottom: 20px; 
-        height: 125px; /* Aligned height to match expanded animation card */
+        height: 125px; 
     }
     
     /* Dynamic tracking badges styling */
@@ -43,6 +43,16 @@ st.markdown("""
     
     /* Timeline streams wrapper details */
     .timeline-msg { background-color: #0f172a; padding: 12px; border-radius: 6px; margin-bottom: 8px; border: 1px solid #334155; }
+
+    /* Enforcement status confirmation banners styling updates */
+    .status-banner {
+        padding: 14px 20px;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 15px;
+        margin-top: 15px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+    }
 
     /* --- ADVANCED VECTOR KEYFRAME MOTION ENGINE --- */
     @keyframes multiFrameLift {
@@ -87,7 +97,7 @@ st.markdown("""
         align-items: center;
         justify-content: space-between;
         margin-bottom: 20px;
-        height: 125px; /* Expanded slightly to house the larger text sizes neatly */
+        height: 125px; 
         overflow: hidden;
     }
 
@@ -102,7 +112,6 @@ st.markdown("""
         width: 210px;
     }
 
-    /* Core Figure Rig assembly architecture */
     .vector-child-rig {
         position: relative;
         width: 45px;
@@ -167,7 +176,6 @@ st.markdown("""
         animation: multiFrameArms 2.2s cubic-bezier(0.25, 1, 0.5, 1) infinite alternate;
     }
 
-    /* Presentation board scaling modifications */
     .milestone-board {
         background-color: #022c22;
         border: 2px dashed #34d399;
@@ -182,6 +190,22 @@ st.markdown("""
     }
 </style>
 """, unsafe_allow_html=True)
+
+# Helper function to find a key recursively anywhere within JSON structures
+def find_key_recursive(d, key_name):
+    if isinstance(d, dict):
+        if key_name in d:
+            return d[key_name]
+        for v in d.values():
+            res = find_key_recursive(v, key_name)
+            if res:
+                return res
+    elif isinstance(d, list):
+        for item in d:
+            res = find_key_recursive(item, key_name)
+            if res:
+                return res
+    return ""
 
 # -----------------------------------------------------------------------------
 # DATA STREAM PARSERS
@@ -219,7 +243,13 @@ def load_one_to_one_feed():
             for line in f:
                 if line.strip():
                     try:
-                        data.append(json.loads(line))
+                        obj = json.loads(line)
+                        summary_text = find_key_recursive(obj, "analyst_alert_summary")
+                        if not summary_text:
+                            summary_text = find_key_recursive(obj, "global_behavioral_summary")
+                            
+                        obj["extracted_alert_summary"] = summary_text
+                        data.append(obj)
                     except json.JSONDecodeError:
                         continue
     except FileNotFoundError:
@@ -305,7 +335,6 @@ if st.session_state.current_page == "main":
     split_left, split_right = st.columns(2)
     
     with split_left:
-        # Left Side: Active Vector Kid Dynamic Lifting Mechanism - Highly Readable Configuration (`image_a3b33f.png`)
         st.markdown("""
         <div class="safety-animation-card">
             <div style="flex-grow: 1; padding-right: 14px;">
@@ -330,7 +359,6 @@ if st.session_state.current_page == "main":
         """, unsafe_allow_html=True)
 
     with split_right:
-        # Right Side: Total System Enforcement Actions Counter Summary Container Grid
         st.markdown(f"""
         <div class="actions-box">
             <div style="font-size: 14px; font-weight: bold; color: #e2e8f0; margin-bottom: 8px; letter-spacing: 0.5px; border-bottom: 1px solid #1e293b; padding-bottom: 4px;">
@@ -461,24 +489,45 @@ elif st.session_state.current_page == "abuser_profile":
             st.session_state[f"global_action_{abuser_id}"] = "Permanently Banned"
             st.rerun()
 
+    # Dynamic Enforcement Notification Banner (Configured with specific requested brand accent metrics)
     active_action = st.session_state.get(f"global_action_{abuser_id}", None)
     if active_action:
-        st.info(f"**Current Status:** `{active_action}`")
+        if active_action == "Warned":
+            # Orange theme config layout
+            st.markdown(f"""
+            <div class="status-banner" style="background-color: #7c2d12; border: 1px solid #ea580c; color: #ffedd5;">
+                ⚠️ Action Implemented: Account configuration successfully modified to warning status mode.
+            </div>
+            """, unsafe_allow_html=True)
+        elif active_action == "Restricted (24h)":
+            # Purple theme config layout
+            st.markdown(f"""
+            <div class="status-banner" style="background-color: #4c1d95; border: 1px solid #7c3aed; color: #f3e8ff;">
+                ⏳ Action Implemented: Account configuration successfully modified to restricted status mode.
+            </div>
+            """, unsafe_allow_html=True)
+        elif active_action == "Permanently Banned":
+            # Red theme config layout
+            st.markdown(f"""
+            <div class="status-banner" style="background-color: #7f1d1d; border: 1px solid #dc2626; color: #fef2f2;">
+                🚫 Action Implemented: Account configuration successfully modified to blocked status mode.
+            </div>
+            """, unsafe_allow_html=True)
 
     st.markdown("---")
     st.markdown("### Interaction Matrix Across Target Minor Accounts")
-    sub_conversations = [c for c in conversations_list if c["sender_id"] == abuser_id]
+    sub_conversations = [c for c in conversations_list if c.get("sender_id") == abuser_id]
     
     for idx, node in enumerate(sub_conversations):
-        victim_id = node["receiver_id"]
-        node_score = node["bert_analysis"]["risk-score"]
+        victim_id = node.get("receiver_id", "Unknown")
+        node_score = node["bert_analysis"]["risk-score"] if "bert_analysis" in node else 0.0
         node_badge = '<span class="badge-high">CRITICAL AXIS</span>' if node_score >= 0.85 else '<span class="badge-low">STABLE VARIANT</span>'
         
         with st.container():
             cx, cy, cz, cw = st.columns([2, 1, 1, 1])
             cx.markdown(f"Target Account: `{victim_id}` {node_badge}", unsafe_allow_html=True)
             cy.markdown(f"Risk: `{node_score:.2f}`")
-            cz.markdown(f"Density: `{len(node['conversation'])} lines`")
+            cz.markdown(f"Density: `{len(node.get('conversation', []))} lines`")
             if cw.button("Review Stream", key=f"target_{victim_id}_{idx}"):
                 navigate_to("conversation_view", abuser=abuser_id, victim=victim_id)
             st.markdown("<hr style='margin: 6px 0; border-color: #1e293b;' />", unsafe_allow_html=True)
@@ -501,6 +550,22 @@ elif st.session_state.current_page == "conversation_view":
     st.button(f"↩️ Back to Investigation Hub", on_click=navigate_to, args=("abuser_profile", abuser_id))
     st.title("Granular Interaction Stream Matrix")
     
+    # Locate exact conversation node match
+    convo_node = next((c for c in conversations_list if c.get("sender_id") == abuser_id and c.get("receiver_id") == victim_id), None)
+    
+    # Display the targeted summary block explicitly
+    st.markdown("### 🔍 Target Specific Behavioral AI Synopsis")
+    if convo_node and convo_node.get("extracted_alert_summary"):
+        summary_display = convo_node["extracted_alert_summary"]
+    else:
+        summary_display = "No direct structural alert summary was compiled for this transaction cluster segment."
+
+    st.markdown(f"""
+    <div style="background-color: #1e3a8a; color: #eff6ff; padding: 20px; border-radius: 8px; font-size: 16px; line-height: 1.55; border-left: 5px solid #2563eb; margin-bottom: 25px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.15);">
+        <strong>One-to-One Vector Context Summary:</strong><br><br>{summary_display}
+    </div>
+    """, unsafe_allow_html=True)
+    
     incident_comments = df_comments[(df_comments["sender_id"] == abuser_id) & (df_comments["receiver_id"] == victim_id)] if not df_comments.empty else pd.DataFrame()
     
     if not incident_comments.empty:
@@ -513,8 +578,6 @@ elif st.session_state.current_page == "conversation_view":
         </div>
         """, unsafe_allow_html=True)
     
-    convo_node = next((c for c in conversations_list if c["sender_id"] == abuser_id and c["receiver_id"] == victim_id), None)
-    
     @st.dialog("Review Decision Entry")
     def review_comment_modal(comment_idx, text):
         st.write(f'**Verify Item:** "{text}"')
@@ -524,7 +587,8 @@ elif st.session_state.current_page == "conversation_view":
             st.rerun()
 
     if convo_node:
-        for idx, msg in enumerate(convo_node["conversation"]):
+        st.markdown("### Raw Dialogue Interaction Timeline Logs")
+        for idx, msg in enumerate(convo_node.get("conversation", [])):
             current_status = st.session_state.get(f"status_{abuser_id}_{idx}", None)
             
             if current_status and "True Value" in current_status:
@@ -542,13 +606,13 @@ elif st.session_state.current_page == "conversation_view":
                 
                 st.markdown(f"""
                 <div class="timeline-msg" style="{box_style}">
-                    <span style="color: #94a3b8; font-size: 12px;">[{msg['timestamp']}]</span>{status_html}<br>
-                    <strong>{abuser_id}:</strong> <span style="color: #f8fafc;">{msg['text']}</span>
+                    <span style="color: #94a3b8; font-size: 12px;">[{msg.get('timestamp', '')}]</span>{status_html}<br>
+                    <strong>{abuser_id}:</strong> <span style="color: #f8fafc;">{msg.get('text', '')}</span>
                 </div>
                 """, unsafe_allow_html=True)
             with col_btn:
                 if st.button("⚖️ Audit", key=f"eval_{idx}", use_container_width=True):
-                    review_comment_modal(idx, msg['text'])
+                    review_comment_modal(idx, msg.get('text', ''))
 
     st.markdown("---")
     st.markdown("### 📧 Outbound Parental Escalation Module")
@@ -573,3 +637,4 @@ elif st.session_state.current_page == "conversation_view":
                 st.success("Alert notification transmitted securely to parental account endpoint.")
             except Exception as mail_err:
                 st.error(f"Transmission failed: {mail_err}")
+                

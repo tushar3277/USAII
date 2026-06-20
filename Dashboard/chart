@@ -12,7 +12,7 @@ st.markdown("""
     /* Global layout baseline text overrides */
     .stApp { font-size: 15px; }
     
-    /* Standard Metric Card sizes based on original screens */
+    /* Standard Metric Card sizes */
     .metric-card { 
         background-color: #1e293b; 
         padding: 20px; 
@@ -27,12 +27,159 @@ st.markdown("""
     .report-box { background-color: #7f1d1d; border: 1px solid #f87171; padding: 18px; border-radius: 6px; color: #fef2f2; margin-bottom: 15px; }
     .report-box h4 { font-size: 16px !important; margin-top: 0; font-weight: bold; color: #fca5a5; }
     
+    /* Actions Ledger System Box Container */
+    .actions-box { 
+        background-color: #111827; 
+        border: 1px solid #334155; 
+        padding: 14px 20px; 
+        border-radius: 8px; 
+        margin-bottom: 20px; 
+        height: 125px; /* Aligned height to match expanded animation card */
+    }
+    
     /* Dynamic tracking badges styling */
     .badge-high { background-color: #dc2626; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px !important; font-weight: bold; }
     .badge-low { background-color: #059669; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px !important; font-weight: bold; }
     
     /* Timeline streams wrapper details */
     .timeline-msg { background-color: #0f172a; padding: 12px; border-radius: 6px; margin-bottom: 8px; border: 1px solid #334155; }
+
+    /* --- ADVANCED VECTOR KEYFRAME MOTION ENGINE --- */
+    @keyframes multiFrameLift {
+        0% { transform: translateY(12px); }
+        20% { transform: translateY(16px); } 
+        45% { transform: translateY(-8px); } 
+        55% { transform: translateY(-2px); } 
+        65%, 100% { transform: translateY(0); }
+    }
+
+    @keyframes multiFrameFace {
+        0%, 35% { content: "😮"; transform: scale(0.9); } 
+        50% { content: "😏"; }
+        60%, 100% { content: "😃"; transform: scale(1.05); } 
+    }
+
+    @keyframes multiFrameArms {
+        0% { transform: rotate(40deg); } 
+        20% { transform: rotate(150deg); } 
+        45% { transform: rotate(-45deg); } 
+        55% { transform: rotate(-25deg); }
+        65%, 100% { transform: rotate(-35deg); } 
+    }
+
+    @keyframes multiFrameBanner {
+        0% { transform: translateY(35px) scale(0.8) rotate(-4deg); opacity: 0; }
+        25% { transform: translateY(40px) scale(0.85) rotate(-2deg); opacity: 0.7; } 
+        45% { transform: translateY(-12px) scale(1.03) rotate(3deg); opacity: 1; } 
+        55% { transform: translateY(-2px) scale(1) rotate(-1deg); }
+        65% { transform: translateY(0) rotate(0deg); }
+        75% { transform: translateY(-3px) rotate(1deg); } 
+        85% { transform: translateY(0) rotate(-1deg); }
+        100% { transform: translateY(0) rotate(0deg); opacity: 1; }
+    }
+
+    .safety-animation-card {
+        background: linear-gradient(135deg, #064e3b 0%, #0f172a 100%);
+        border: 1px solid #10b981;
+        border-radius: 8px;
+        padding: 16px 22px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+        height: 125px; /* Expanded slightly to house the larger text sizes neatly */
+        overflow: hidden;
+    }
+
+    .interactive-stage {
+        display: flex;
+        flex-direction: row-reverse; 
+        align-items: center;
+        gap: 8px;
+        height: 95px;
+        position: relative;
+        padding-top: 15px;
+        width: 210px;
+    }
+
+    /* Core Figure Rig assembly architecture */
+    .vector-child-rig {
+        position: relative;
+        width: 45px;
+        height: 70px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        animation: multiFrameLift 2.2s cubic-bezier(0.25, 1, 0.5, 1) infinite alternate;
+    }
+
+    .child-head-sphere {
+        width: 22px;
+        height: 22px;
+        background-color: #ffdbac;
+        border-radius: 50%;
+        position: relative;
+        z-index: 5;
+        box-shadow: inset -2px -2px 0px rgba(0,0,0,0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .child-head-sphere::after {
+        content: "😮";
+        font-size: 13px;
+        position: absolute;
+        top: 2px;
+        animation: multiFrameFace 2.2s ease-in-out infinite alternate;
+    }
+    
+    .child-hair-cap {
+        position: absolute;
+        top: -3px;
+        width: 24px;
+        height: 8px;
+        background-color: #451a03;
+        border-radius: 6px 6px 0 0;
+        z-index: 6;
+    }
+
+    .child-torso-block {
+        width: 18px;
+        height: 22px;
+        background-color: #3b82f6;
+        border-radius: 4px 4px 2px 2px;
+        margin-top: -2px;
+        z-index: 3;
+        position: relative;
+    }
+
+    .child-arm-left {
+        position: absolute;
+        top: 22px;
+        left: -4px;
+        width: 6px;
+        height: 24px;
+        background-color: #3b82f6;
+        border-radius: 3px;
+        transform-origin: top center;
+        z-index: 4;
+        animation: multiFrameArms 2.2s cubic-bezier(0.25, 1, 0.5, 1) infinite alternate;
+    }
+
+    /* Presentation board scaling modifications */
+    .milestone-board {
+        background-color: #022c22;
+        border: 2px dashed #34d399;
+        padding: 6px 12px;
+        border-radius: 6px;
+        text-align: center;
+        min-width: 140px;
+        z-index: 10;
+        transform-origin: bottom center;
+        animation: multiFrameBanner 2.2s cubic-bezier(0.25, 1, 0.5, 1) infinite alternate;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -135,6 +282,13 @@ if st.session_state.current_page == "main":
     st.title("🛡️ Trust & Safety Platform Analytics")
     st.subheader("Parental-Controlled Account Enforcement Portal")
     
+    total_reviewed_comments = sum(1 for k, v in st.session_state.items() if k.startswith("status_") and ("True Value" in str(v) or "False Positive" in str(v)))
+    total_warnings_issued = sum(1 for k, v in st.session_state.items() if k.startswith("global_action_") and v == "Warned")
+    total_restrictions_issued = sum(1 for k, v in st.session_state.items() if k.startswith("global_action_") and v == "Restricted (24h)")
+    total_blocks_issued = sum(1 for k, v in st.session_state.items() if k.startswith("global_action_") and v == "Permanently Banned")
+    total_profiles_flagged = sum(1 for k, v in st.session_state.items() if k.startswith("flagged_handle_") and v is True)
+    total_combined_actions = total_warnings_issued + total_restrictions_issued + total_blocks_issued + total_profiles_flagged
+
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.markdown(f'<div class="metric-card" style="border-left-color: #64748b;"><h3>{len(df_global)}</h3><p>Total Tracked Senders</p></div>', unsafe_allow_html=True)
@@ -145,9 +299,52 @@ if st.session_state.current_page == "main":
         total_reports = df_comments["report_count"].sum() if not df_comments.empty else 0
         st.markdown(f'<div class="metric-card"><h3>{total_reports}</h3><p>Total User Flagged Submissions</p></div>', unsafe_allow_html=True)
     with col4:
-        st.markdown('<div class="metric-card" style="border-left-color: #10b981;"><h3>Active</h3><p>Real-Time AI Stream Monitor</p></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="metric-card" style="border-left-color: #10b981;"><h3>{total_reviewed_comments}</h3><p>Total Reports Audited</p></div>', unsafe_allow_html=True)
 
-    st.markdown("---")
+    # 50/50 Symmetrical Split Row
+    split_left, split_right = st.columns(2)
+    
+    with split_left:
+        # Left Side: Active Vector Kid Dynamic Lifting Mechanism - Highly Readable Configuration (`image_a3b33f.png`)
+        st.markdown("""
+        <div class="safety-animation-card">
+            <div style="flex-grow: 1; padding-right: 14px;">
+                <h4 style="color: #34d399; margin: 0 0 6px 0; font-size: 19px; font-weight: 800; letter-spacing: 0.3px;">📈 Mitigation Velocity Metrics</h4>
+                <p style="color: #cbd5e1; margin: 0; font-size: 15px; line-height: 1.45; font-weight: 400;">
+                    Proactive network policy enforcements continue to insulate underage conversation ecosystems.
+                </p>
+            </div>
+            <div class="interactive-stage">
+                <div class="milestone-board">
+                    <span style="font-size: 25px; font-weight: 900; color: #ffffff; display: block; line-height: 1.1; margin-bottom: 2px;">72%</span>
+                    <span style="font-size: 11px; font-weight: 800; color: #a7f3d0; letter-spacing: 0.8px; display: block;">MORE SAFE THIS MONTH</span>
+                </div>
+                <div class="vector-child-rig">
+                    <div class="child-hair-cap"></div>
+                    <div class="child-head-sphere"></div>
+                    <div class="child-torso-block"></div>
+                    <div class="child-arm-left"></div>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with split_right:
+        # Right Side: Total System Enforcement Actions Counter Summary Container Grid
+        st.markdown(f"""
+        <div class="actions-box">
+            <div style="font-size: 14px; font-weight: bold; color: #e2e8f0; margin-bottom: 8px; letter-spacing: 0.5px; border-bottom: 1px solid #1e293b; padding-bottom: 4px;">
+                💼 TOTAL PROFILE ACTION LOGS ({total_combined_actions})
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 4px 0;">
+                <div><span style="color: #fbbf24; font-weight: bold; font-size: 16px;">⚠️ {total_warnings_issued}</span> <span style="color: #94a3b8; font-size: 13px; margin-left: 2px;">Warnings</span></div>
+                <div><span style="color: #f97316; font-weight: bold; font-size: 16px;">⏳ {total_restrictions_issued}</span> <span style="color: #94a3b8; font-size: 13px; margin-left: 2px;">Restrictions</span></div>
+                <div><span style="color: #ef4444; font-weight: bold; font-size: 16px;">🚫 {total_blocks_issued}</span> <span style="color: #94a3b8; font-size: 13px; margin-left: 2px;">Bans</span></div>
+                <div><span style="color: #3b82f6; font-weight: bold; font-size: 16px;">🚩 {total_profiles_flagged}</span> <span style="color: #94a3b8; font-size: 13px; margin-left: 2px;">Flags</span></div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
     st.markdown("#### Filter Flagged Violations")
     priority_filter = st.radio("Select Alert Class Level", ["All Classifications", "High Priority (Risk ≥ 0.85)", "Low Priority (Risk < 0.85)"], horizontal=True)
     
@@ -194,8 +391,6 @@ elif st.session_state.current_page == "abuser_profile":
     col1, col2 = st.columns([2, 2])
     with col1:
         st.markdown("### AI Model Structural Classification Analytics")
-        
-        # Prominent Global Risk Score Header Accentuation
         st.markdown(f"""
         <div style="margin-bottom: 12px;">
             <span style="font-size: 22px; font-weight: 800; color: #ef4444; letter-spacing: 0.5px; border-left: 4px solid #ef4444; padding-left: 8px;">OVERALL GLOBAL RISK SCORE: {meta['risk_score']:.2f}</span>
@@ -230,7 +425,6 @@ elif st.session_state.current_page == "abuser_profile":
     
     with col2:
         st.markdown("### Core Behavioral AI Synopsis Summary")
-        # Blue Block Container: Scaled layout for high readability
         st.markdown(f"""
         <div style="background-color: #1e3a8a; color: #eff6ff; padding: 24px; border-radius: 8px; font-size: 17px; line-height: 1.6; border-left: 5px solid #3b82f6; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
             <strong>System Summary Insight:</strong><br><br>{meta["behavioral_summary"]}
@@ -257,12 +451,15 @@ elif st.session_state.current_page == "abuser_profile":
     with act_col1:
         if st.button("⚠️ Issue Official Warning", key="action_warn", use_container_width=True):
             st.session_state[f"global_action_{abuser_id}"] = "Warned"
+            st.rerun()
     with act_col2:
         if st.button("⏳ Restrict Profile for 24 Hours", key="action_restrict", use_container_width=True):
             st.session_state[f"global_action_{abuser_id}"] = "Restricted (24h)"
+            st.rerun()
     with act_col3:
         if st.button("🚫 Permanently Block Profile", key="action_block", type="primary", use_container_width=True):
             st.session_state[f"global_action_{abuser_id}"] = "Permanently Banned"
+            st.rerun()
 
     active_action = st.session_state.get(f"global_action_{abuser_id}", None)
     if active_action:
@@ -330,15 +527,14 @@ elif st.session_state.current_page == "conversation_view":
         for idx, msg in enumerate(convo_node["conversation"]):
             current_status = st.session_state.get(f"status_{abuser_id}_{idx}", None)
             
-            # Dynamic color coding evaluation
             if current_status and "True Value" in current_status:
-                box_style = "background-color: #7f1d1d; border: 1px solid #dc2626;"  # Dark Crimson Red
+                box_style = "background-color: #7f1d1d; border: 1px solid #dc2626;"  
             elif current_status and "False Positive" in current_status:
-                box_style = "background-color: #064e3b; border: 1px solid #10b981;"  # Dark Forest Green
+                box_style = "background-color: #064e3b; border: 1px solid #10b981;"  
             elif not incident_comments.empty and msg["text"] == top_reported["text"]:
-                box_style = "border: 1px solid #ef4444; background-color: #2d1515;"  # Outlier alert indicator line
+                box_style = "border: 1px solid #ef4444; background-color: #2d1515;"  
             else:
-                box_style = "background-color: #0f172a; border: 1px solid #334155;"  # Default dark background
+                box_style = "background-color: #0f172a; border: 1px solid #334155;"  
             
             col_msg, col_btn = st.columns([5, 1])
             with col_msg:

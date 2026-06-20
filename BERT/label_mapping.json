@@ -1,0 +1,22 @@
+{
+    "id2label": {
+        "0": "bullying",
+        "1": "coercion",
+        "2": "grooming",
+        "3": "hate",
+        "4": "sextortion",
+        "5": "sexual",
+        "6": "threat",
+        "7": "toxicity"
+    },
+    "label2id": {
+        "bullying": 0,
+        "coercion": 1,
+        "grooming": 2,
+        "hate": 3,
+        "sextortion": 4,
+        "sexual": 5,
+        "threat": 6,
+        "toxicity": 7
+    }
+}
